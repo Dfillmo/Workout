@@ -73,6 +73,17 @@ function Profile() {
       
       const exerciseMap = new Map() // Use Map for deduplication
       
+      // Helper to normalize exercise names (remove punctuation, extra spaces, etc.)
+      const normalizeName = (name) => {
+        return name
+          .toLowerCase()
+          .trim()
+          .replace(/[:\-\*\.]+$/, '') // Remove trailing punctuation
+          .replace(/[:\-\*\.]+/g, ' ') // Replace punctuation with spaces
+          .replace(/\s+/g, ' ')        // Collapse multiple spaces
+          .trim()
+      }
+      
       for (const plan of plans) {
         const planRes = await fetch(`/api/plans/${plan.id}`)
         const planData = await planRes.json()
@@ -81,11 +92,20 @@ function Profile() {
           for (const circuit of day.circuits) {
             for (const exercise of circuit.exercises) {
               // Normalize name for deduplication
-              const normalizedName = exercise.name.toLowerCase().trim()
+              const normalizedName = normalizeName(exercise.name)
+              
+              // Skip if empty after normalization
+              if (!normalizedName || normalizedName.length < 2) continue
+              
               if (!exerciseMap.has(normalizedName)) {
+                // Clean up the display name too
+                const cleanName = exercise.name
+                  .replace(/[:\-\*]+$/, '')
+                  .trim()
+                
                 exerciseMap.set(normalizedName, {
                   id: exercise.id,
-                  name: exercise.name
+                  name: cleanName
                 })
               }
             }

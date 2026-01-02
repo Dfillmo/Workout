@@ -219,8 +219,9 @@ class WorkoutPDFParser:
             if notes_text and len(notes_text) > 3:
                 notes = notes_text
         
-        # Clean up name - remove any leading numbers/bullets
+        # Clean up name - remove any leading numbers/bullets and trailing punctuation
         name = re.sub(r'^[\d\.\)\-\s]+', '', name).strip()
+        name = re.sub(r'[:\-\*\.]+$', '', name).strip()  # Remove trailing punctuation
         
         # Title case the name
         name = self._title_case_exercise(name)
@@ -448,6 +449,7 @@ class WorkoutPDFParser:
             name = name_match.group(1).strip() if name_match else line[:50]
         
         name = re.sub(r'^[\d\.\)\-\s]+', '', name).strip()
+        name = re.sub(r'[:\-\*\.]+$', '', name).strip()  # Remove trailing punctuation
         name = self._title_case_exercise(name)
         
         if len(name) < 3:
