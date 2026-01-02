@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from .database import engine, Base
+from . import models  # Import models to register them with Base
 from .routes import router
 
 # Create database tables

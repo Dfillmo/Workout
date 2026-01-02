@@ -73,15 +73,27 @@ function Profile() {
       
       const exerciseMap = new Map() // Use Map for deduplication
       
-      // Helper to normalize exercise names (remove punctuation, extra spaces, etc.)
+      // Helper to normalize exercise names (remove punctuation, extra spaces, singularize)
       const normalizeName = (name) => {
-        return name
+        let normalized = name
           .toLowerCase()
           .trim()
           .replace(/[:\-\*\.]+$/, '') // Remove trailing punctuation
           .replace(/[:\-\*\.]+/g, ' ') // Replace punctuation with spaces
           .replace(/\s+/g, ' ')        // Collapse multiple spaces
           .trim()
+        
+        // Singularize common exercise plurals (remove trailing 's' for common patterns)
+        // But be careful not to singularize words that shouldn't be (e.g., "press" stays "press")
+        const singularExceptions = ['press', 'pullups', 'pushups', 'dips', 'abs', 'bis', 'tris']
+        if (!singularExceptions.some(ex => normalized.endsWith(ex))) {
+          // Remove trailing 's' if the word ends with 's' (simple plurals)
+          if (normalized.endsWith('s') && normalized.length > 3) {
+            normalized = normalized.slice(0, -1)
+          }
+        }
+        
+        return normalized
       }
       
       for (const plan of plans) {

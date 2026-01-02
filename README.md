@@ -79,13 +79,80 @@ cd Workout
 docker compose up -d --build
 ```
 
-### 4. Access via Twingate
+## 🌐 Remote Access with Twingate
 
-1. Create a Twingate account at [twingate.com](https://twingate.com)
-2. Add a new Resource pointing to your Raspberry Pi's local IP (e.g., `192.168.1.100`)
-3. Set the port to `80`
-4. Install Twingate client on your phone
-5. Connect and access your workout app from anywhere!
+Twingate provides secure remote access to your self-hosted app without exposing ports to the internet.
+
+### Step 1: Create a Twingate Account
+
+1. Go to [twingate.com](https://www.twingate.com/) and sign up for a free account
+2. Create a new **Network** (e.g., "Home Network")
+
+### Step 2: Deploy a Connector on Your Raspberry Pi
+
+A Connector is a small agent that runs on your Pi and creates secure tunnels.
+
+```bash
+# Twingate will give you a command like this in the Admin Console:
+# Go to Network → Connectors → Deploy a Connector → Docker
+
+docker run -d \
+  --name twingate-connector \
+  --restart always \
+  --network host \
+  -e TWINGATE_NETWORK="your-network" \
+  -e TWINGATE_ACCESS_TOKEN="your-token" \
+  -e TWINGATE_REFRESH_TOKEN="your-refresh-token" \
+  twingate/connector:latest
+```
+
+> 💡 The exact command with your tokens is provided in the Twingate Admin Console under **Connectors → Add Connector → Docker**
+
+### Step 3: Add Your Gym App as a Resource
+
+1. In the Twingate Admin Console, go to **Resources** → **Add Resource**
+2. Configure:
+   - **Name:** `Gym Workout App`
+   - **Address:** Your Pi's local IP (e.g., `192.168.1.100`) 
+   - **Port:** `80`
+   - **Protocol:** TCP
+3. Assign the Resource to a **Group** (create one if needed, e.g., "Personal")
+
+### Step 4: Install Twingate Client on Your Phone
+
+1. Download the **Twingate** app:
+   - [iOS App Store](https://apps.apple.com/app/twingate/id1501592214)
+   - [Google Play Store](https://play.google.com/store/apps/details?id=com.twingate.android)
+2. Sign in with your Twingate account
+3. Toggle the connection **ON**
+
+### Step 5: Access Your App!
+
+Once connected to Twingate, open your browser and go to:
+
+```
+http://192.168.1.100
+```
+(Replace with your Raspberry Pi's local IP)
+
+> 🎉 You can now access your workout app from anywhere in the world - gym, work, vacation!
+
+### Finding Your Pi's IP Address
+
+```bash
+# On the Raspberry Pi, run:
+hostname -I
+
+# Or check your router's admin page for connected devices
+```
+
+### Optional: Use a Custom Domain Name
+
+Instead of remembering an IP, you can set up a local DNS alias in Twingate:
+
+1. Go to **Resources** → Your gym app resource
+2. Under **Alias**, add a friendly name like `gym.local` or `workout.home`
+3. Now access via `http://gym.local` when connected to Twingate!
 
 ## 📁 Project Structure
 

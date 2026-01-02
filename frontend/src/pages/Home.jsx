@@ -169,17 +169,29 @@ function Home({ stats, onStatsUpdate }) {
   }
 
   const startTodaysWorkout = async () => {
-    if (!todaysWorkout) return
+    if (!todaysWorkout || !todaysWorkout.id) {
+      console.error('No workout selected or missing ID')
+      alert('Please select a workout first')
+      return
+    }
     try {
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workout_day_id: todaysWorkout.id })
       })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.detail || `HTTP error ${res.status}`)
+      }
       const session = await res.json()
+      if (!session || !session.id) {
+        throw new Error('Invalid session response')
+      }
       navigate(`/workout/${session.id}`)
     } catch (err) {
       console.error('Failed to start session:', err)
+      alert('Failed to start workout: ' + err.message)
     }
   }
 
