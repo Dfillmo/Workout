@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+dist
+.git
+.gitignore
+README.md
+.env
+*.md
+__pycache__
+*.pyc
+*.pyo
+.Python
+venv
+.venv
+data
+*.db
+
