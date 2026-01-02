@@ -18,20 +18,160 @@ A self-hosted web app for managing workout plans from PDF files. Upload your wor
 
 ## 🚀 Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Direct Install on Server (Recommended)
+
+#### Step 1: Install Dependencies
 
 ```bash
-# Clone the repository
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install Node.js 18 LTS
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install serve for frontend
+sudo npm install -g serve
+```
+
+#### Step 2: Clone and Setup
+
+```bash
+# Clone the repo
+cd ~
 git clone https://github.com/Dfillmo/Workout.git
 cd Workout
 
-# Start with Docker Compose
-docker-compose up -d --build
+# Setup Backend
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-# Access at http://localhost (port 80)
+# Setup Frontend  
+cd ../frontend
+npm install
+npm run build
 ```
 
-### Option 2: Local Development
+#### Step 3: Create Auto-Start Services
+
+**Create backend service:**
+```bash
+sudo nano /etc/systemd/system/gym-backend.service
+```
+
+Paste this (change `pi` to your username if different):
+```ini
+[Unit]
+Description=Gym Workout Backend
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Workout/backend
+ExecStart=/home/pi/Workout/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Create frontend service:**
+```bash
+sudo nano /etc/systemd/system/gym-frontend.service
+```
+
+Paste this:
+```ini
+[Unit]
+Description=Gym Workout Frontend
+After=network.target gym-backend.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Workout/frontend
+ExecStart=/usr/bin/serve -s dist -l 3000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Enable and start services:**
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable gym-backend gym-frontend
+sudo systemctl start gym-backend gym-frontend
+
+# Check status
+sudo systemctl status gym-backend
+sudo systemctl status gym-frontend
+```
+
+#### Step 4: Setup Nginx (Reverse Proxy)
+
+Nginx routes traffic to both frontend and backend on a single port.
+
+```bash
+sudo apt install -y nginx
+sudo nano /etc/nginx/sites-available/gym
+```
+
+Paste this:
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    # Frontend
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Backend API
+    location /api {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Enable the site:
+```bash
+sudo ln -s /etc/nginx/sites-available/gym /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
+sudo systemctl enable nginx
+```
+
+#### Step 5: Access Your App
+
+🎉 **Go to:** `http://YOUR_SERVER_IP`
+
+Find your server's IP:
+```bash
+hostname -I
+```
+
+---
+
+### Option 2: Local Development (Windows/Mac)
 
 **Backend:**
 ```bash
@@ -53,30 +193,16 @@ npm run dev
 
 Access at `http://localhost:5173`
 
-## 🍓 Raspberry Pi Deployment
+---
 
-### 1. Install Docker
-
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-# Log out and back in
-```
-
-### 2. Install Docker Compose
-
-```bash
-sudo apt-get update
-sudo apt-get install docker-compose-plugin
-```
-
-### 3. Clone and Run
+### Option 3: Docker Compose
 
 ```bash
 git clone https://github.com/Dfillmo/Workout.git
 cd Workout
-docker compose up -d --build
+docker-compose up -d --build
+
+# Access at http://localhost (port 80)
 ```
 
 ## 🌐 Remote Access with Twingate
