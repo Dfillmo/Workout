@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronDown, ChevronUp, Play, Dumbbell, Clock, Zap, Scale } from 'lucide-react'
+import { ChevronLeft, ChevronDown, ChevronUp, Play, Dumbbell, Clock, Zap, Scale, BookOpen, X } from 'lucide-react'
+import { getExerciseInfo } from '../data/exerciseDatabase'
 
 // Exercise muscle group mapping for colors and emojis
 const exerciseData = {
@@ -60,6 +61,7 @@ function WorkoutDetail() {
   const [workout, setWorkout] = useState(null)
   const [loading, setLoading] = useState(true)
   const [expandedCircuits, setExpandedCircuits] = useState({})
+  const [selectedExercise, setSelectedExercise] = useState(null)
 
   useEffect(() => {
     fetchWorkout()
@@ -202,10 +204,20 @@ function WorkoutDetail() {
                 {circuit.exercises.map((exercise, exIndex) => {
                   const color = getExerciseColor(exercise.name)
                   const emoji = getExerciseEmoji(exercise.name)
+                  const exerciseInfo = getExerciseInfo(exercise.name)
                   return (
                     <div key={exercise.id} style={styles.exerciseCard}>
-                      <div style={{...styles.exerciseThumb, background: `${color}20`, borderColor: `${color}40`}}>
-                        <span style={styles.exerciseEmoji}>{emoji}</span>
+                      <div 
+                        style={{
+                          ...styles.exerciseThumb, 
+                          background: exerciseInfo?.image 
+                            ? `url(${exerciseInfo.image}) center/cover`
+                            : `${color}20`, 
+                          borderColor: `${color}40`
+                        }}
+                        onClick={() => setSelectedExercise({ ...exercise, info: exerciseInfo })}
+                      >
+                        {!exerciseInfo?.image && <span style={styles.exerciseEmoji}>{emoji}</span>}
                       </div>
                       <div style={styles.exerciseContent}>
                         <h4 style={styles.exerciseName}>{exercise.name}</h4>
@@ -219,16 +231,16 @@ function WorkoutDetail() {
                             </span>
                           )}
                         </div>
-                        {exercise.weight_recommendation && (
-                          <p style={styles.exerciseWeight}>
-                            <Scale size={12} />
-                            {exercise.weight_recommendation}
-                          </p>
+                        {exerciseInfo?.muscles && (
+                          <p style={styles.exerciseMuscles}>{exerciseInfo.muscles}</p>
                         )}
                       </div>
-                      <div style={{...styles.exerciseNumber, background: `${color}20`, color}}>
-                        {exIndex + 1}
-                      </div>
+                      <button 
+                        style={{...styles.infoBtn, background: `${color}20`, color}}
+                        onClick={() => setSelectedExercise({ ...exercise, info: exerciseInfo })}
+                      >
+                        <BookOpen size={14} />
+                      </button>
                     </div>
                   )
                 })}
@@ -252,6 +264,51 @@ function WorkoutDetail() {
           <span>START WORKOUT</span>
         </button>
       </div>
+
+      {/* Exercise Detail Modal */}
+      {selectedExercise && (
+        <div style={styles.modal} onClick={() => setSelectedExercise(null)}>
+          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <button style={styles.modalClose} onClick={() => setSelectedExercise(null)}>
+              <X size={24} />
+            </button>
+            
+            {selectedExercise.info?.image && (
+              <div style={styles.modalImage}>
+                <img src={selectedExercise.info.image} alt={selectedExercise.name} style={styles.modalImg} />
+              </div>
+            )}
+            
+            <div style={styles.modalBody}>
+              <h2 style={styles.modalTitle}>{selectedExercise.name}</h2>
+              <p style={styles.modalMuscles}>{selectedExercise.info?.muscles}</p>
+              
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>How to Perform</h3>
+                <p style={styles.modalDescription}>{selectedExercise.info?.description}</p>
+              </div>
+              
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>Key Points</h3>
+                <ul style={styles.modalTips}>
+                  {selectedExercise.info?.tips?.map((tip, i) => (
+                    <li key={i} style={styles.modalTip}>
+                      <span style={styles.tipBullet}>•</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {selectedExercise.info?.source && (
+                <p style={styles.modalSource}>
+                  Source: <a href={`https://${selectedExercise.info.source}`} target="_blank" rel="noopener noreferrer" style={styles.sourceLink}>{selectedExercise.info.source}</a>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -421,10 +478,26 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    border: '1px solid'
+    border: '1px solid',
+    cursor: 'pointer'
   },
   exerciseEmoji: {
     fontSize: '24px'
+  },
+  exerciseMuscles: {
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+    marginTop: '2px'
+  },
+  infoBtn: {
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    padding: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
   },
   exerciseContent: {
     flex: 1,
@@ -514,6 +587,111 @@ const styles = {
     letterSpacing: '1px',
     cursor: 'pointer',
     fontFamily: 'inherit'
+  },
+  
+  // Modal styles
+  modal: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.9)',
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    zIndex: 200,
+    padding: '20px'
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: '500px',
+    maxHeight: '85vh',
+    background: 'var(--bg-card)',
+    borderRadius: 'var(--radius-xl)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative'
+  },
+  modalClose: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    background: 'rgba(0, 0, 0, 0.5)',
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    padding: '8px',
+    color: '#fff',
+    cursor: 'pointer',
+    zIndex: 10
+  },
+  modalImage: {
+    width: '100%',
+    height: '200px',
+    overflow: 'hidden'
+  },
+  modalImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  modalBody: {
+    padding: '20px',
+    overflowY: 'auto'
+  },
+  modalTitle: {
+    fontSize: '22px',
+    fontWeight: 700,
+    marginBottom: '4px'
+  },
+  modalMuscles: {
+    fontSize: '14px',
+    color: 'var(--accent-orange)',
+    marginBottom: '20px',
+    fontWeight: 500
+  },
+  modalSection: {
+    marginBottom: '20px'
+  },
+  modalSectionTitle: {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '8px'
+  },
+  modalDescription: {
+    fontSize: '15px',
+    color: 'var(--text-primary)',
+    lineHeight: 1.6
+  },
+  modalTips: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0
+  },
+  modalTip: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    marginBottom: '8px',
+    lineHeight: 1.5
+  },
+  tipBullet: {
+    color: 'var(--accent-orange)',
+    fontWeight: 700
+  },
+  modalSource: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--border-subtle)'
+  },
+  sourceLink: {
+    color: 'var(--accent-cyan)',
+    textDecoration: 'none'
   }
 }
 

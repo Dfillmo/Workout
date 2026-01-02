@@ -82,6 +82,7 @@ class ExerciseLog(Base):
     reps_completed = Column(Integer, nullable=True)
     weight_used = Column(Float, nullable=True)
     completed = Column(Boolean, default=False)
+    logged_at = Column(DateTime, default=datetime.utcnow)
     
     session = relationship("WorkoutSession", back_populates="exercise_logs")
 

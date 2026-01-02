@@ -1,138 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
-  Pause, Play, ChevronLeft, ChevronRight, X, Check, 
-  RotateCcw, Shuffle, Info, Clock, Weight, TrendingUp
+  Pause, Play, ChevronLeft, ChevronRight, X, 
+  RotateCcw, Shuffle, Info, Clock, Weight, TrendingUp, BookOpen
 } from 'lucide-react'
-
-// Comprehensive exercise tips database
-const exerciseTips = {
-  'push up': {
-    tip: 'Keep your body in a straight line from head to heels. Lower until your chest nearly touches the ground, then push up explosively.',
-    cues: ['Core tight', 'Elbows 45°', 'Full range of motion'],
-    muscles: 'Chest, Shoulders, Triceps'
-  },
-  'incline barbell press': {
-    tip: 'Set the bench to 30-45 degrees. Lower the bar to your upper chest with control, then press up and slightly back.',
-    cues: ['Retract shoulder blades', 'Feet flat on floor', 'Control the descent'],
-    muscles: 'Upper Chest, Front Delts, Triceps'
-  },
-  'incline bench': {
-    tip: 'Set the bench to 30-45 degrees. Lower the bar to your upper chest with control, then press up and slightly back.',
-    cues: ['Retract shoulder blades', 'Feet flat on floor', 'Control the descent'],
-    muscles: 'Upper Chest, Front Delts, Triceps'
-  },
-  'bench press': {
-    tip: 'Arch your back slightly, retract shoulder blades, and grip the bar just outside shoulder width. Lower to mid-chest and drive up.',
-    cues: ['Leg drive', 'Tight upper back', 'Bar path: slight diagonal'],
-    muscles: 'Chest, Triceps, Front Delts'
-  },
-  'barbell push press': {
-    tip: 'Start with bar at shoulders, dip knees slightly, then explosively drive through legs while pressing overhead.',
-    cues: ['Quick dip', 'Explosive drive', 'Lock out overhead'],
-    muscles: 'Shoulders, Triceps, Core, Legs'
-  },
-  'hand stand push up': {
-    tip: 'Kick up against a wall, lower your head toward the ground, then press back up. Scale with pike push-ups if needed.',
-    cues: ['Core tight', 'Controlled descent', 'Press through palms'],
-    muscles: 'Shoulders, Triceps, Core'
-  },
-  'tricep rope push down': {
-    tip: 'Keep elbows pinned at your sides. Extend arms fully and spread the rope at the bottom for peak contraction.',
-    cues: ['Elbows stationary', 'Spread at bottom', 'Squeeze triceps'],
-    muscles: 'Triceps'
-  },
-  'muscle up': {
-    tip: 'Start with an explosive pull-up, then transition over the bar by leaning forward and pressing out.',
-    cues: ['Explosive pull', 'Lean forward at top', 'Smooth transition'],
-    muscles: 'Lats, Chest, Triceps, Core'
-  },
-  'close grip bench': {
-    tip: 'Grip the bar shoulder-width apart. Keep elbows close to body and lower to lower chest.',
-    cues: ['Elbows tucked', 'Control the weight', 'Full lockout'],
-    muscles: 'Triceps, Chest, Front Delts'
-  },
-  'hanging leg raise': {
-    tip: 'Hang from a bar, keep legs straight, and raise them to parallel or higher. Control the descent.',
-    cues: ['No swinging', 'Legs straight', 'Core engaged'],
-    muscles: 'Abs, Hip Flexors'
-  },
-  'l-sit': {
-    tip: 'Support yourself on parallettes or the floor, lift legs to parallel, and hold. Keep legs straight.',
-    cues: ['Depress shoulders', 'Point toes', 'Breathe steadily'],
-    muscles: 'Abs, Hip Flexors, Triceps'
-  },
-  'curl': {
-    tip: 'Keep your elbows stationary at your sides. Control the weight up and down, squeezing at the top.',
-    cues: ['No swinging', 'Full contraction', 'Slow negative'],
-    muscles: 'Biceps, Forearms'
-  },
-  'row': {
-    tip: 'Pull your shoulder blades together at the top. Keep your back straight and core engaged.',
-    cues: ['Lead with elbows', 'Squeeze back', 'Control descent'],
-    muscles: 'Back, Biceps, Rear Delts'
-  },
-  'pull up': {
-    tip: 'Hang with arms fully extended, pull yourself up until chin clears the bar, then lower with control.',
-    cues: ['Engage lats', 'Pull to chest', 'Full extension at bottom'],
-    muscles: 'Lats, Biceps, Core'
-  },
-  'lat pulldown': {
-    tip: 'Pull the bar to your upper chest while leaning back slightly. Squeeze your lats at the bottom.',
-    cues: ['Chest up', 'Pull to chest', 'Controlled release'],
-    muscles: 'Lats, Biceps, Rear Delts'
-  },
-  'deadlift': {
-    tip: 'Keep the bar close to your body, hinge at the hips, maintain a neutral spine throughout.',
-    cues: ['Push floor away', 'Bar close to body', 'Hips and shoulders rise together'],
-    muscles: 'Hamstrings, Glutes, Back, Core'
-  },
-  'squat': {
-    tip: 'Keep your chest up, push knees out over toes, and sit back into your hips. Drive through heels.',
-    cues: ['Chest up', 'Knees out', 'Depth: hip crease below knee'],
-    muscles: 'Quads, Glutes, Hamstrings, Core'
-  },
-  'shoulder press': {
-    tip: 'Press directly overhead, keeping core tight. Lower to shoulder level with control.',
-    cues: ['Core braced', 'Full lockout', 'Head through at top'],
-    muscles: 'Shoulders, Triceps, Core'
-  },
-  'lateral raise': {
-    tip: 'Raise arms to shoulder height with a slight bend in elbows. Lead with your elbows, not hands.',
-    cues: ['Slight elbow bend', 'Control the weight', 'Pause at top'],
-    muscles: 'Side Delts'
-  },
-  'dip': {
-    tip: 'Lower until upper arms are parallel to floor, then press back up. Keep elbows close for triceps focus.',
-    cues: ['Controlled descent', 'Elbows back', 'Full lockout'],
-    muscles: 'Triceps, Chest, Front Delts'
-  },
-  'default': {
-    tip: 'Focus on proper form and controlled movements. Breathe out during exertion.',
-    cues: ['Control the weight', 'Full range of motion', 'Mind-muscle connection'],
-    muscles: 'Multiple muscle groups'
-  }
-}
-
-function getExerciseInfo(exerciseName) {
-  const name = exerciseName.toLowerCase()
-  
-  // Check for exact or partial matches
-  for (const [key, info] of Object.entries(exerciseTips)) {
-    if (key !== 'default' && name.includes(key)) {
-      return info
-    }
-  }
-  
-  // Fallback matches
-  if (name.includes('press')) return exerciseTips['bench press'] || exerciseTips.default
-  if (name.includes('curl')) return exerciseTips['curl']
-  if (name.includes('row')) return exerciseTips['row']
-  if (name.includes('squat')) return exerciseTips['squat']
-  if (name.includes('pull')) return exerciseTips['pull up']
-  
-  return exerciseTips.default
-}
+import { getExerciseInfo } from '../data/exerciseDatabase'
 
 function getExerciseColor(exerciseName) {
   const name = exerciseName.toLowerCase()
@@ -161,6 +33,7 @@ function ActiveWorkout({ onComplete }) {
   const [weight, setWeight] = useState('')
   const [completedSets, setCompletedSets] = useState({})
   const [weightHistory, setWeightHistory] = useState({})
+  const [showExerciseDetail, setShowExerciseDetail] = useState(false)
   
   const timerRef = useRef(null)
 
@@ -249,7 +122,6 @@ function ActiveWorkout({ onComplete }) {
   }
 
   const handleNext = async () => {
-    const exercise = getCurrentExerciseData()
     const totalSets = getTotalSets()
     
     // Mark current set as completed
@@ -346,7 +218,7 @@ function ActiveWorkout({ onComplete }) {
   }
 
   const exercise = getCurrentExerciseData()
-  const exerciseInfo = exercise ? getExerciseInfo(exercise.name) : exerciseTips.default
+  const exerciseInfo = exercise ? getExerciseInfo(exercise.name) : null
   const exerciseColor = exercise ? getExerciseColor(exercise.name) : '#6b7280'
   const history = exercise ? weightHistory[exercise.id] : null
 
@@ -386,18 +258,32 @@ function ActiveWorkout({ onComplete }) {
         </div>
       </div>
 
-      {/* Exercise Visual */}
-      <div style={{...styles.exerciseMedia, background: `linear-gradient(135deg, ${exerciseColor}40 0%, ${exerciseColor}15 100%)`}}>
-        <div style={styles.mediaPlaceholder}>
-          <div style={{...styles.exerciseIcon, background: exerciseColor}}>
-            <Weight size={40} color="#fff" />
+      {/* Exercise Image/Visual */}
+      <div 
+        style={{
+          ...styles.exerciseMedia, 
+          background: exerciseInfo?.image 
+            ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${exerciseInfo.image}) center/cover`
+            : `linear-gradient(135deg, ${exerciseColor}40 0%, ${exerciseColor}15 100%)`
+        }}
+        onClick={() => setShowExerciseDetail(true)}
+      >
+        {!exerciseInfo?.image && (
+          <div style={styles.mediaPlaceholder}>
+            <div style={{...styles.exerciseIcon, background: exerciseColor}}>
+              <Weight size={40} color="#fff" />
+            </div>
           </div>
-        </div>
+        )}
         <div style={styles.mediaOverlay}>
           <span style={styles.currentLabel}>CURRENT EXERCISE</span>
         </div>
+        <button style={styles.infoBtn} onClick={(e) => { e.stopPropagation(); setShowExerciseDetail(true) }}>
+          <BookOpen size={18} />
+          <span>How To</span>
+        </button>
         <div style={styles.muscleTag}>
-          {exerciseInfo.muscles}
+          {exerciseInfo?.muscles || 'Multiple muscles'}
         </div>
       </div>
 
@@ -409,14 +295,9 @@ function ActiveWorkout({ onComplete }) {
         <div style={styles.tipBox}>
           <div style={styles.tipHeader}>
             <Info size={14} color="var(--accent-orange)" />
-            <span style={styles.tipLabel}>TIP FROM COACH</span>
+            <span style={styles.tipLabel}>QUICK TIP</span>
           </div>
-          <p style={styles.tipText}>{exerciseInfo.tip}</p>
-          <div style={styles.cuesList}>
-            {exerciseInfo.cues?.map((cue, i) => (
-              <span key={i} style={styles.cueTag}>{cue}</span>
-            ))}
-          </div>
+          <p style={styles.tipText}>{exerciseInfo?.description || 'Focus on proper form and controlled movements.'}</p>
         </div>
 
         {/* Weight Input */}
@@ -495,6 +376,51 @@ function ActiveWorkout({ onComplete }) {
           <span>Skip</span>
         </button>
       </div>
+
+      {/* Exercise Detail Modal */}
+      {showExerciseDetail && (
+        <div style={styles.modal} onClick={() => setShowExerciseDetail(false)}>
+          <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <button style={styles.modalClose} onClick={() => setShowExerciseDetail(false)}>
+              <X size={24} />
+            </button>
+            
+            {exerciseInfo?.image && (
+              <div style={styles.modalImage}>
+                <img src={exerciseInfo.image} alt={exercise.name} style={styles.modalImg} />
+              </div>
+            )}
+            
+            <div style={styles.modalBody}>
+              <h2 style={styles.modalTitle}>{exercise.name}</h2>
+              <p style={styles.modalMuscles}>{exerciseInfo?.muscles}</p>
+              
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>How to Perform</h3>
+                <p style={styles.modalDescription}>{exerciseInfo?.description}</p>
+              </div>
+              
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>Key Points</h3>
+                <ul style={styles.modalTips}>
+                  {exerciseInfo?.tips?.map((tip, i) => (
+                    <li key={i} style={styles.modalTip}>
+                      <span style={styles.tipBullet}>•</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {exerciseInfo?.source && (
+                <p style={styles.modalSource}>
+                  Source: <a href={`https://${exerciseInfo.source}`} target="_blank" rel="noopener noreferrer" style={styles.sourceLink}>{exerciseInfo.source}</a>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -567,11 +493,12 @@ const styles = {
     color: 'rgba(255, 255, 255, 0.7)'
   },
   exerciseMedia: {
-    height: '200px',
+    height: '220px',
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    cursor: 'pointer'
   },
   mediaPlaceholder: {
     display: 'flex',
@@ -594,11 +521,28 @@ const styles = {
   currentLabel: {
     fontSize: '10px',
     fontWeight: 700,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(255, 255, 255, 0.8)',
     letterSpacing: '1px',
-    background: 'rgba(0, 0, 0, 0.3)',
+    background: 'rgba(0, 0, 0, 0.4)',
     padding: '5px 10px',
     borderRadius: 'var(--radius-full)'
+  },
+  infoBtn: {
+    position: 'absolute',
+    top: '70px',
+    right: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    background: 'rgba(255, 255, 255, 0.2)',
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    color: '#fff',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit'
   },
   muscleTag: {
     position: 'absolute',
@@ -607,7 +551,7 @@ const styles = {
     fontSize: '11px',
     fontWeight: 600,
     color: '#fff',
-    background: 'rgba(0, 0, 0, 0.4)',
+    background: 'rgba(0, 0, 0, 0.5)',
     padding: '5px 10px',
     borderRadius: 'var(--radius-full)'
   },
@@ -645,21 +589,7 @@ const styles = {
     fontSize: '13px',
     color: 'var(--text-secondary)',
     lineHeight: 1.5,
-    margin: 0,
-    marginBottom: '8px'
-  },
-  cuesList: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px'
-  },
-  cueTag: {
-    fontSize: '11px',
-    fontWeight: 500,
-    color: 'var(--accent-orange)',
-    background: 'rgba(255, 107, 53, 0.15)',
-    padding: '4px 8px',
-    borderRadius: 'var(--radius-full)'
+    margin: 0
   },
   weightSection: {
     background: 'var(--bg-card)',
@@ -794,6 +724,111 @@ const styles = {
     fontWeight: 700,
     cursor: 'pointer',
     fontFamily: 'inherit'
+  },
+  
+  // Modal styles
+  modal: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0, 0, 0, 0.9)',
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    zIndex: 200,
+    padding: '20px'
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: '500px',
+    maxHeight: '85vh',
+    background: 'var(--bg-card)',
+    borderRadius: 'var(--radius-xl)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  modalClose: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    background: 'rgba(0, 0, 0, 0.5)',
+    border: 'none',
+    borderRadius: 'var(--radius-full)',
+    padding: '8px',
+    color: '#fff',
+    cursor: 'pointer',
+    zIndex: 10
+  },
+  modalImage: {
+    width: '100%',
+    height: '200px',
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  modalImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  modalBody: {
+    padding: '20px',
+    overflowY: 'auto'
+  },
+  modalTitle: {
+    fontSize: '22px',
+    fontWeight: 700,
+    marginBottom: '4px'
+  },
+  modalMuscles: {
+    fontSize: '14px',
+    color: 'var(--accent-orange)',
+    marginBottom: '20px',
+    fontWeight: 500
+  },
+  modalSection: {
+    marginBottom: '20px'
+  },
+  modalSectionTitle: {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '8px'
+  },
+  modalDescription: {
+    fontSize: '15px',
+    color: 'var(--text-primary)',
+    lineHeight: 1.6
+  },
+  modalTips: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0
+  },
+  modalTip: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    fontSize: '14px',
+    color: 'var(--text-secondary)',
+    marginBottom: '8px',
+    lineHeight: 1.5
+  },
+  tipBullet: {
+    color: 'var(--accent-orange)',
+    fontWeight: 700
+  },
+  modalSource: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--border-subtle)'
+  },
+  sourceLink: {
+    color: 'var(--accent-cyan)',
+    textDecoration: 'none'
   }
 }
 
